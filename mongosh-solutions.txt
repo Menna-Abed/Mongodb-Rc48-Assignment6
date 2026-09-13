@@ -1,0 +1,277 @@
+Assignment 6 - MongoDB Shell Part
+=================================
+
+
+Q1/ Create an explicit books collection with validation.
+-------------------------------------------------------
+
+ db.createCollection("books", {
+        validator: {
+            $jsonSchema: {
+                bsonType: "object",
+                required: ["title"],
+                properties: {
+                    title: {
+                        bsonType: "string",
+                        minLength: 1,
+                        description: "title must be a non-empty string"
+                    }
+                }
+            }
+        }
+    });
+
+
+====================================================================================================
+
+Q2/ Create an implicit authors collection by inserting data.
+-------------------------------------------------------
+
+
+db.authors.insertOne({
+ name : "Author1",
+ nationality : "British"
+});
+
+
+====================================================================================================
+
+Q3/ Create a capped logs collection with 1MB size limit.
+-------------------------------------------------------
+
+
+db.createCollection("logs", {
+    capped: true,
+    size: 1048576
+});
+
+
+====================================================================================================
+
+Q4/ Create an index on the title field in books.
+-----------------------------------------------
+
+
+db.books.createIndex({
+    title: 1
+});
+
+
+
+====================================================================================================
+
+Q5/Insert one document into books.
+----------------------------------
+
+
+db.books.insertOne({
+     title : "Book1",
+     author : "Ali",
+      year : 1937,
+     genres : ["Fantasy", "Adventure"]
+});
+
+
+====================================================================================================
+
+Q6/ Insert multiple documents into books.
+--------------------------------
+
+
+db.books.insertMany([
+ {  title : "Future",
+    author : "George Orwell",
+    year : 2020,
+    genres : ["Science Fiction"]
+ },
+ {
+    title : "To Kill a Mockingbird",
+    author : "Harper Lee",
+    year : 1960,
+    genres : ["Classic", "Fiction"]
+  },
+  {
+     title : "Brave New World",
+     author  : "Aldous Huxley",
+     year : 2006,
+     genres : ["Dystopian", "Science Fiction"]
+   }
+ ]);
+
+
+====================================================================================================
+
+Q7/ Insert a new log into logs.
+----------------
+
+
+db.logs.insertOne({
+    book_id : "6aa6a3a9d39e2f78e582542d",
+    action : "borrowed"
+});
+
+
+====================================================================================================
+
+Q8/Update Future book and change its year to 2022.
+----------------
+
+
+db.books.updateOne(
+    { title: "Future" },
+    { $set: { year: 2022 } }
+);
+
+
+====================================================================================================
+
+Q9/Find a book with title Brave New World.
+----------------
+
+
+db.books.findOne({
+    title: "Brave New World"
+});
+
+
+====================================================================================================
+
+Q10/Find all books published between 1990 and 2010.
+----------------
+
+
+db.books.find({
+    year: {
+        $gte: 1990,
+        $lte: 2010
+    }
+});
+
+
+====================================================================================================
+
+Q11/Find books where genres includes Science Fiction.
+----------------
+
+
+db.books.find({
+    genres: "Science Fiction"
+});
+
+
+====================================================================================================
+
+Q12/Skip first two books, limit to next three, and sort by year descending.
+----------------
+
+
+db.books.find().sort({ year: -1 }).skip(2).limit(3);
+
+
+
+====================================================================================================
+
+Q13/Find books where year is stored as an integer.
+----------------
+
+
+db.books.find({
+    year: {
+        $type: "int"
+    }
+});
+
+
+====================================================================================================
+
+Q14/Find books where genres does not include Horror or Science Fiction.
+----------------
+
+
+db.books.find({
+    genres: {
+        $nin: ["Horror", "Science Fiction"]
+    }
+});
+
+
+====================================================================================================
+
+Q15/Delete all books published before 2000.
+
+db.books.deleteMany({
+    year: {
+        $lt: 2000
+    }
+});
+
+
+====================================================================================================
+
+Q16/Using aggregation, filter books published after 2000 and sort them by year descending.
+----------------
+
+
+db.books.aggregate([
+    { $match: { year: { $gt: 2000 } }  },
+    { $sort: { year: -1 }  }
+]);
+
+
+====================================================================================================
+
+Q17/Using aggregation, find books published after 2000 and show only title, author and year.
+----------------
+
+
+db.books.aggregate([
+    { $match: { year: {  $gt: 2000 }  }  },
+    {  $project: {  _id: 0,  title: 1,  author: 1, year: 1 } }
+]);
+
+
+====================================================================================================
+
+Q18/Using aggregation, break genres array into separate documents.
+-----------------------------------------------------------------
+
+
+db.books.aggregate([
+    { $unwind: "$genres" }
+    { $project: { _id: 0, title: 1, genres: 1 } }
+]);
+
+
+====================================================================================================
+
+
+Q19/Using aggregation, join books collection with logs collection.
+----------------------------------------------------------
+
+
+db.books.aggregate([
+        { $addFields: {
+                converted_book_id: {  $convert: {  input: "$book_id", to: "objectId"  }  }
+                    } },
+        {
+            $lookup: {
+                from: "books",
+                localField: "converted_book_id",
+                foreignField: "_id",
+                as: "book_details"
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                action: 1,
+                "book_details.title": 1,
+                "book_details.author": 1,
+                "book_details.year": 1
+            }
+        }
+
+]);
+
+
+====================================================================================================
