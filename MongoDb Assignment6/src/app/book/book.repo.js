@@ -85,9 +85,7 @@ const aggregate4Repo = async () => {
                 converted_book_id: {
                     $convert: {
                         input: "$book_id",
-                        to: "objectId",
-                        onError: null,
-                        onNull: null
+                        to: "objectId" 
                     }
                 }
             }
